@@ -4,8 +4,8 @@ Classic Tic Tac Toe using Mini Max Algorithm
 
 ## About
 Hobby project for anyone learning and practicing.
--Build simple Game UI using Gridview.
--Implement simple AI player to play using Mini Max Algorithm
+1. Build simple Game UI using Gridview.
+2. Implement simple AI player to play using Mini Max Algorithm
 
 A few resources that will really help your understanding of miniMax theory and implementation:
 

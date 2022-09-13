@@ -1,3 +1,7 @@
+// import 'dart:ffi';
+import 'dart:io';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 void main() {
@@ -5,111 +9,324 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({Key? key}) : super(key: key);
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      debugShowCheckedModeBanner: false,
+      home: MyHomePage(),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  String gameOutcomeFeedback = '';
+  String humanPlayer = 'X';
+  String aiPlayer = 'O';
+  int counter = 0;
 
-  void _incrementCounter() {
+  //gameBoard for drawing the UI using the Gridview Builder.
+  //    0 | 1 | 2
+  //    3 | 4 | 5
+  //    6 | 7 | 8
+
+  List gameBoard =
+  [ '', '', '',
+    '', '', '',
+    '', '', ''
+  ];
+
+  void human_move(_index) {
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      gameBoard[_index] = humanPlayer;
+      check_gameTied(gameBoard);
+      checkWinner(gameBoard, humanPlayer);
     });
+    // print('${gameBoard}');
+
+  }
+
+  void computer_move() {
+    //Player2
+    List availableMove = [];
+    int aiMove = 0;
+
+    if( checkWinner(gameBoard, humanPlayer) ||  checkWinner(gameBoard, aiPlayer) || check_gameTied(gameBoard)){
+      // game over
+
+    }else{
+      //game not over. Make a move
+
+      // Testing - just pick next available spot
+      // 1. get all index of unplayed boxes
+      // gameBoard.asMap().forEach((index, element) {
+      //   if (element == '') {
+      //     availableMove.add(index);
+      //   }
+      // });
+      // // 2. pick Next available availableMove.
+      // aiMove = availableMove[0];
+      //
+      // // 3. Update Gameboard with computer selection
+      // setState(() {
+      //   gameBoard[aiMove] = aiPlayer;
+      //   check_gameTied(gameBoard);
+      //   checkWinner(gameBoard, aiPlayer);
+      // });
+
+      //  Using MiniMax() algorithm
+
+      // First AI move, if human did not play center, play center. if human play center, play any corner
+      if(counter == 0){
+        List cornerLocations = [0,2,6,8];
+        counter++;
+        if(gameBoard[4] == humanPlayer){
+
+          setState(() {
+            //pick any corner
+            gameBoard[cornerLocations[Random().nextInt(cornerLocations.length)]] = aiPlayer;
+
+          });
+
+        }else if(gameBoard[4] == ''){
+
+          setState(() {
+            //pick center
+            gameBoard[4] = aiPlayer;
+
+          });
+
+        }
+        // 2nd AI move and after, use MiniMax()
+      }else{
+        aiMove = miniMax(gameBoard, aiPlayer)['index'] ;
+        setState(() {
+          gameBoard[aiMove] = aiPlayer;
+          check_gameTied(gameBoard);
+          checkWinner(gameBoard, aiPlayer);
+        });
+      }
+
+      // }
+
+
+    }
+
+
+
+  }
+
+
+  bool checkWinner(List board, player){
+    //Check if winner is 'humanPlayer' or 'aiPlayer' or if neither
+
+    if( board[0] == player &&  board[1] == player  &&  board[2] == player ||
+        board[3] == player &&  board[4] == player  &&  board[5] == player ||
+        board[6] == player &&  board[7] == player  &&  board[8] == player ||
+        board[0] == player &&  board[3] == player  &&  board[6] == player ||
+        board[1] == player &&  board[4] == player  &&  board[7] == player ||
+        board[2] == player &&  board[5] == player  &&  board[8] == player ||
+        board[0] == player &&  board[4] == player  &&  board[8] == player ||
+        board[2] == player &&  board[4] == player  &&  board[6] == player
+    ){
+      gameOutcomeFeedback = '${player} wins';
+      return true;
+    }else {
+      return false;
+    }
+
+  }
+  bool check_gameTied(List board){
+
+    if(!board.contains('') && !checkWinner(board, aiPlayer) && !checkWinner(board, humanPlayer)){
+      gameOutcomeFeedback = 'Game Tied';
+      return true;
+    }
+    else{
+      return false;
+    }
+
+  }
+
+  Map miniMax(simBoard, player) {
+
+    print('${counter++}');
+    // miniMax returns the index ( 0-8)  that AI (X) should play
+    //    0 | 1 | 2
+    //    3 | 4 | 5
+    //    6 | 7 | 8
+
+    // Base case (termination condition)
+
+    if (checkWinner(simBoard, aiPlayer)) {
+      // AI has won. Return +10
+      return {'score':10};
+    }
+    else if (checkWinner(simBoard, humanPlayer)) {
+      // Human has won,  Return -10
+      return {'score':-10};
+
+    } else if (check_gameTied(simBoard)) {
+      // Tie,  Return
+      return {'score':0};
+
+    }
+
+    // --- End of Base case
+
+    //  AI to play all Open Spaces, evaluate which is the best move.
+    var moves = [];
+
+    for ( int i = 0; i < simBoard.length; i++) {
+
+      if( simBoard[i] == ''){
+        var move = {}; // create a object for each play
+        move['index'] = i; // record the location of the AI move ( 0-8)
+        simBoard[i] = player; // play at i
+
+        // call miniMax ( simBoard, ) recursively
+        if (player == aiPlayer) {
+
+          var result = miniMax(simBoard, humanPlayer);
+          move['score'] = result['score'];
+          // move['score'] = result;
+          // print('${move}');
+
+        } else {
+          var result = miniMax(simBoard, aiPlayer);
+          move['score'] = result['score'];
+          //move['score'] = result;
+          // print('${move}');
+
+
+        }
+        // Reset the spot that was simulated back to ''
+        simBoard[i] = '';
+        //
+        // Save the move and score to moves[]
+        moves.add(move);
+        // print('${moves}');
+
+      }
+
+
+    }
+
+    //Finally, return index of the best move for AI
+    // Pick the best move
+    var bestMove;
+    if (player == aiPlayer) {
+      var bestScore = -10000;
+      for (int i = 0; i < moves.length; i++) {
+        if (moves[i]['score'] > bestScore) {
+          bestScore = moves[i]['score'];
+          bestMove = i;
+        }
+      }
+    } else {
+      var bestScore = 10000;
+      for (int i = 0; i < moves.length; i++) {
+        if (moves[i]['score'] < bestScore) {
+          bestScore = moves[i]['score'];
+          bestMove = i;
+        }
+      }
+    }
+    return moves[bestMove];
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
+
+    return SafeArea(
+      child: Scaffold(
+        backgroundColor: Colors.blueGrey,
+
+        body: Center(
+          child: Container(
+            margin: EdgeInsets.all(20),
+            width: 600,
+            height: 800,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+
+                  checkWinner(gameBoard,aiPlayer)||checkWinner(gameBoard,humanPlayer) || check_gameTied(gameBoard)? Text('${gameOutcomeFeedback}',
+                    style: TextStyle(color: Colors.white, fontSize: 50),): Text(''),
+
+                  GridView.builder(
+                      shrinkWrap: true,  //do not use up the entire allowable space of parent
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,  //number of columns
+                          crossAxisSpacing: 5, //gap spacing horizontal between grid elements
+                          mainAxisSpacing: 5 //gap spacing vertical between grid elements
+                      ),
+                      itemCount: gameBoard.length,
+                      itemBuilder: (BuildContext ctx, index) {
+                        return GestureDetector(
+                          onTap: gameBoard[index] != '' || checkWinner(gameBoard, humanPlayer) || checkWinner(gameBoard, aiPlayer) ? null : (){
+                            //onTap: (){
+                            human_move(index);
+                            Future.delayed(Duration(milliseconds: 1000), () {
+                              // Do something
+                              computer_move();
+                            });
+
+                          },
+                          child: Container(
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: Colors.black87,
+                            ),
+                            child: Text(gameBoard[index],
+                              style: TextStyle(color: Colors.white, fontSize: 80 ),
+                            ),
+                          ),
+                        );
+                      }),
+
+                  SizedBox(height: .05*MediaQuery.of(context).size.height),
+                  Visibility(
+                    visible: check_gameTied(gameBoard) || checkWinner(gameBoard, humanPlayer) || checkWinner(gameBoard, aiPlayer),
+                    child: OutlinedButton(
+                      child: Text('Play Again'),
+                      style: OutlinedButton.styleFrom(backgroundColor: Colors.transparent,primary: Colors.white,side: BorderSide(color: Colors.orange)),
+                      onPressed: (){
+                        setState(() {
+                          gameBoard =
+                          [ '','','',
+                            '','','',
+                            '','',''
+                          ];
+                          gameOutcomeFeedback ='';
+                          counter = 0;
+                        });
+                      },
+                    ),
+                  )
+                ],
+              ),
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
+          ),
         ),
+
+
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
+
+
+
+
+
+

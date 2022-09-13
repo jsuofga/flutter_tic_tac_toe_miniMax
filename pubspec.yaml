@@ -1,5 +1,5 @@
 name: flutter_tic_tac_toe_minimax
-description: A new Flutter project.
+description: Classic Tic Tac Toe using Mini Max Algorithm.
 
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
